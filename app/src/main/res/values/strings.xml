@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">YoPrimero</string>
+    <string name="vpn_connection_name">YoPrimero Firewall</string>
+    <string name="dns_server">1.1.1.1</string>
+    <string name="accessibility_description">YoPrimero usa este servicio para automatizar la desactivación de la optimización de batería de las apps de la lista blanca.</string>
+</resources>
