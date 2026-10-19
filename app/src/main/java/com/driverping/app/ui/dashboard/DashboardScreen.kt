@@ -778,6 +778,7 @@ private fun PermissionIcon(type: PermissionType): ImageVector = when (type) {
     PermissionType.ACCESSIBILITY -> Icons.Filled.Accessibility
     PermissionType.VPN -> Icons.Filled.Lock
     PermissionType.NOTIFICATION -> Icons.Filled.Notifications
+    PermissionType.LOCATION -> Icons.Filled.LocationOn
 }
 
 @Composable

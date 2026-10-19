@@ -14,7 +14,7 @@ import android.view.accessibility.AccessibilityManager
 import androidx.core.content.ContextCompat
 
 enum class PermissionType {
-    OVERLAY, ACCESSIBILITY, VPN, NOTIFICATION;
+    OVERLAY, ACCESSIBILITY, VPN, NOTIFICATION, LOCATION;
 }
 
 data class PermissionStatus(
@@ -50,8 +50,22 @@ class PermissionRepository(private val context: Context) {
             name = "Notificaciones",
             description = "Notificación persistente del servicio de trabajo.",
             granted = hasNotificationPermission()
+        ),
+        PermissionStatus(
+            type = PermissionType.LOCATION,
+            name = "Ubicación GPS (Alta Precisión)",
+            description = "Refresco GPS de 2s para prioridad de asignación de viajes.",
+            granted = hasLocationPermission()
         )
     )
+
+    private fun hasLocationPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+    }
 
     @SuppressLint("InlinedApi")
     private fun hasNotificationPermission(): Boolean {
@@ -107,5 +121,9 @@ class PermissionRepository(private val context: Context) {
         } else {
             Intent(Settings.ACTION_SETTINGS)
         }
+        PermissionType.LOCATION -> Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.parse("package:${context.packageName}")
+        )
     }
 }

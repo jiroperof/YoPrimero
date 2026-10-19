@@ -1,12 +1,16 @@
 package com.driverping.app.service.location
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
+import androidx.core.content.ContextCompat
 import com.driverping.app.util.NotificationHelper
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -51,6 +55,11 @@ class LocationRefreshService : Service() {
                 return START_NOT_STICKY
             }
             else -> {
+                if (!hasLocationPermission()) {
+                    Log.w(TAG, "Permisos de ubicación no concedidos. Cancelando LocationRefreshService...")
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
                 startForegroundCompat()
                 startLocationUpdates()
                 return START_STICKY
@@ -63,9 +72,14 @@ class LocationRefreshService : Service() {
         super.onDestroy()
     }
 
+    private fun hasLocationPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    }
+
     @SuppressLint("MissingPermission")
     private fun startLocationUpdates() {
-        if (isRefreshing) return
+        if (isRefreshing || !hasLocationPermission()) return
 
         try {
             val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, UPDATE_INTERVAL_MS)
@@ -125,6 +139,20 @@ class LocationRefreshService : Service() {
             "Refresco GPS Activo",
             "Manteniendo módem GPS en alta precisión (2s)"
         )
-        startForeground(NotificationHelper.NOTIF_HUD_ID + 100, notif)
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(
+                    NotificationHelper.NOTIF_HUD_ID + 100,
+                    notif,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+                )
+            } else {
+                startForeground(NotificationHelper.NOTIF_HUD_ID + 100, notif)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al iniciar startForeground en LocationRefreshService", e)
+            stopSelf()
+        }
     }
 }
