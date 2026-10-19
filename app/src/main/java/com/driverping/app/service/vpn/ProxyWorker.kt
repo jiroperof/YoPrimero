@@ -249,6 +249,8 @@ class ProxyWorker(
                 try {
                     val channel = SocketChannel.open()
                     channel.configureBlocking(true)
+                    channel.socket().keepAlive = true // Mantiene activas las conexiones WebSocket prolongadas de Yummy
+                    channel.socket().tcpNoDelay = true // Entrega inmediata de paquetes sin latencia Nagle
                     vpnService.protect(channel.socket()) // Evade la VPN
                     channel.connect(InetSocketAddress(dstIpStr, dstPort))
 

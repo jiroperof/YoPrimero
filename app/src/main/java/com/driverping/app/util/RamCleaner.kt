@@ -55,6 +55,7 @@ object RamCleaner {
                 pkg.isNotBlank() &&
                     pkg !in protected &&
                     !pkg.startsWith("com.android") &&
+                    !pkg.startsWith("com.google") &&
                     pkg.contains(".")
             }
 

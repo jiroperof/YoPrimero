@@ -30,7 +30,7 @@ class AutoConfigAccessibilityService : AccessibilityService() {
     private var state = State.WAITING_MODEL
     private val processed = HashSet<String>()
 
-    private val whitelistLabels = listOf("Yummy", "Ridery", "Yango", "Yango Pro", "Yummy Rides")
+    private val whitelistLabels = com.driverping.app.util.Constants.BATTERY_APP_LABELS
 
     // Términos comunes en diversas capas (MIUI, HyperOS, OneUI, XOS, genérico)
     private val toggleLabels = listOf(
