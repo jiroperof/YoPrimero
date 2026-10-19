@@ -30,15 +30,20 @@ object Constants {
 
     /**
      * Lista blanca de paquetes de aplicaciones cuyo tráfico PERMITIMOS.
-     * Añade aquí los paquetes de las apps de viaje que el conductor usa.
+     * Incluye los paquetes reales verificados: Yummy Rides (com.yummyrides) y Yango (com.yandex.yango).
      */
     val WHITELIST = listOf(
+        "com.yummyrides",
         "com.yummy.driver",
+        "com.yandex.yango",
+        "com.yango.driver",
+        "com.yandex.taximeter",
         "com.ridery.driver",
         "com.ridery.passenger",
-        "com.yango.driver",
         "com.google.android.gms",
         "com.google.android.gsf",
+        "com.google.android.location",
+        "com.google.android.apps.maps",
         "com.android.vending",
         "com.android.chrome"
     )
@@ -48,9 +53,10 @@ object Constants {
      * se les desactiva la optimización de batería automáticamente.
      */
     val BATTERY_APP_LABELS = listOf(
+        "Yummy Rides",
         "Yummy",
-        "Ridery",
-        "Yango"
+        "Yango",
+        "Ridery"
     )
 
     /**

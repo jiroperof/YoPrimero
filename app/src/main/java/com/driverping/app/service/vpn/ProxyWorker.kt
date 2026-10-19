@@ -56,6 +56,7 @@ class ProxyWorker(
         proxyThread = thread(start = true, name = "DriverPing-TunWorker") {
             runLoop()
         }
+        startRrcKeepAliveLoop()
     }
 
     fun stop() {
@@ -437,5 +438,39 @@ class ProxyWorker(
             sum = (sum and 0xFFFF) + (sum shr 16)
         }
         return (sum.inv() and 0xFFFF).toInt()
+    }
+
+    /**
+     * Prevención RRC Idle (Antena Móvil 4G/LTE Activa)
+     * --------------------------------------------------
+     * Envía un paquete UDP de 1 byte a un servidor Anycast (8.8.8.8) cada 3 segundos.
+     * Evita que la interfaz de radio móvil entre en estado de inactividad (RRC Idle),
+     * garantizando latencia cero al recibir solicitudes de viaje.
+     */
+    private fun startRrcKeepAliveLoop() {
+        threadPool.execute {
+            var socket: DatagramSocket? = null
+            try {
+                socket = DatagramSocket()
+                socket.soTimeout = 2000
+                vpnService.protect(socket) // Evade la VPN
+
+                val targetIp = InetAddress.getByName("8.8.8.8")
+                val dummyPayload = byteArrayOf(0x01)
+                val packet = DatagramPacket(dummyPayload, dummyPayload.size, targetIp, 53)
+
+                while (isRunning) {
+                    try {
+                        socket.send(packet)
+                    } catch (_: Exception) {
+                    }
+                    Thread.sleep(3000L)
+                }
+            } catch (e: Exception) {
+                Log.e("ProxyWorker", "Error en rutina de RRC Keep-Alive", e)
+            } finally {
+                try { socket?.close() } catch (_: Exception) {}
+            }
+        }
     }
 }

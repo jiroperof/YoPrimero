@@ -305,6 +305,15 @@ class DashboardViewModel @Inject constructor(
                 } catch (_: Exception) {
                 }
             }
+            // 5. Arrancar el Refresco de GPS de Alta Precisión
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(Intent(context, com.driverping.app.service.location.LocationRefreshService::class.java))
+                } else {
+                    context.startService(Intent(context, com.driverping.app.service.location.LocationRefreshService::class.java))
+                }
+            } catch (_: Exception) {
+            }
             _uiState.value = _uiState.value.copy(
                 workModeActive = true,
                 progress = false,
@@ -318,6 +327,7 @@ class DashboardViewModel @Inject constructor(
     private fun stopWorkMode(context: Context) {
         context.stopService(Intent(context, FirewallVpnService::class.java))
         context.stopService(Intent(context, HudOverlayService::class.java))
+        context.stopService(Intent(context, com.driverping.app.service.location.LocationRefreshService::class.java))
         _uiState.value = _uiState.value.copy(
             workModeActive = false,
             ramProcessesKilled = 0,

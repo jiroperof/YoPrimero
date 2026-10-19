@@ -2,10 +2,10 @@
                         YOPRIMERO - DOCUMENTACIÓN TÉCNICA OFICIAL
 ================================================================================
 Proyecto: YoPrimero (App Android para Conductores y Repartidores)
-Versión Actual: v2.2 REAL (build version 13)
+Versión Actual: v2.3 REAL (build version 14)
 Ubicación Raíz: C:/Users/roper/DEV/APP
 Plataforma: Android (minSdk 24 - Android 7.0, targetSdk / compileSdk 35 - Android 15)
-Stack: Kotlin 2.1.10, Jetpack Compose, Material 3, MVVM, Hilt 2.53.1, Coroutines, VpnService (Tun2Socks)
+Stack: Kotlin 2.1.10, Jetpack Compose, Material 3, MVVM, Hilt 2.53.1, Coroutines, VpnService (Tun2Socks), FusedLocationProviderClient, NotificationListenerService
 
 Eslogan: "¡Tú entregas primero!"
 
@@ -15,18 +15,19 @@ Eslogan: "¡Tú entregas primero!"
 1. Resumen Ejecutivo y Propósito
 2. Arquitectura General del Proyecto
 3. Módulos Core (Firewall VPN, Proxy, Accesibilidad, HUD, RAM Cleaner)
-4. Módulos de Compatibilidad (Teléfonos Chinos / Venezuela, Boot, Quick Tile)
-5. Sistema de Gestión Dinámica de Lista Blanca (App Picker)
-6. Identidad Visual, Marca y Diseño UI/UX ("Neo-Dark Driver")
-7. Historial Completo de Versiones, Mejoras y Bugs Corregidos (Changelog)
-8. Estructura de Archivos del Proyecto
-9. Guía de Compilación y Publicación en GitHub
+4. Módulos de Asignación Avanzada (GPS 2s, RRC Keep-Alive, Sobreescritura de Alertas)
+5. Módulos de Compatibilidad (Teléfonos Chinos / Venezuela, Boot, Quick Tile)
+6. Sistema de Gestión Dinámica de Lista Blanca (App Picker & Paquetes Reales)
+7. Identidad Visual, Marca y Diseño UI/UX ("Neo-Dark Driver")
+8. Historial Completo de Versiones, Mejoras y Bugs Corregidos (Changelog)
+9. Estructura de Archivos del Proyecto
+10. Guía de Compilación y Publicación en GitHub
 
 ================================================================================
 1. RESUMEN EJECUTIVO Y PROPÓSITO
 ================================================================================
 YoPrimero es una aplicación nativa Android diseñada para conductores de apps de
-viaje y repartidores de delivery (Yummy, Ridery, Yango, Uber, DiDi, PedidosYa).
+viaje y repartidores de delivery (Yummy Rides, Yango, Ridery, Uber, DiDi, PedidosYa).
 
 La aplicación NO interactúa con las APIs internas de esas empresas. En su lugar,
 optimiza el entorno del sistema operativo Android para:
@@ -35,7 +36,8 @@ optimiza el entorno del sistema operativo Android para:
      mediante un Firewall VPN local para reservar el 100% del ancho de banda.
   3. Evitar que el sistema operativo o ahorradores de batería de marcas chinas
      (Xiaomi/HyperOS, Infinix/XOS, Samsung) maten las apps de trabajo.
-  4. Mantener la pantalla y CPU activas con un HUD Flotante discreto.
+  4. Mantener el módem GPS en alta precisión (2s) y la antena 4G/LTE activa (RRC Connected).
+  5. Elevar al 100% el volumen y encender la pantalla cuando llegan ofertas de viaje.
 
 ================================================================================
 2. ARQUITECTURA GENERAL DEL PROYECTO
@@ -47,7 +49,7 @@ Stack Tecnológico:
   - UI: Jetpack Compose con Material 3 y esquema forzado Neo-Dark Driver
   - Arquitectura: MVVM (Model-View-ViewModel) con StateFlow reactivo
   - Inyección de Dependencias: Hilt (@HiltAndroidApp, @AndroidEntryPoint, @HiltViewModel)
-  - Asincronía: Coroutines (Dispatchers.IO) + StateFlow
+  - Asincronía: Coroutines (Dispatchers.IO) + StateFlow + Java Executor Threads
   - Navegación: Jetpack Navigation Compose (AppNavHost)
 
 ================================================================================
@@ -61,163 +63,120 @@ Stack Tecnológico:
   - VpnService.Builder configura DNS de baja latencia Anycast de Cloudflare:
     addDnsServer("1.1.1.1") y addDnsServer("1.0.0.1").
   - FIREWALL POR APP: Usa builder.addAllowedApplication(...) para cada paquete
-    de la lista blanca dinámica (Yummy, Ridery, Yango, Play Services, Chrome, etc.).
-    Android bloquea automáticamente la salida a internet de las demás apps.
+    de la lista blanca dinámica (Yummy Rides, Yango, Ridery, Play Services, Chrome).
   - MOTOR PROXY TUN2SOCKS (ProxyWorker.kt):
-    * Procesa paquetes IP en espacio de usuario desde el FileDescriptor del TUN.
-    * Tráfico UDP (Protocolo 17 / DNS 53): Redirige consultas a servidores remotos
-      usando DatagramSocket protegidos (vpnService.protect) y reinyecta respuestas.
-    * Tráfico TCP (Protocolo 6 / HTTP / HTTPS / WebSockets wss://): Mantiene un
-      motor de estado TCP completo (SYN, SYN-ACK, ACK, PSH, FIN, RST) mediante
-      SocketChannel protegidos.
-    * TCP Keep-Alive (keepAlive = true, tcpNoDelay = true) para asegurar que las
-      conexiones WebSocket de Yummy Conductor no caduquen durante esperas en calle.
+    * UDP (DNS 53) y TCP (SYN, SYN-ACK, ACK, PSH, FIN, RST) mediante SocketChannel.
+    * TCP Keep-Alive (keepAlive = true, tcpNoDelay = true) para conexiones WebSocket wss://.
   - Ciclo de Vida Limpio:
-    * Override de onRevoke(): Cierra el túnel si el sistema cancela la VPN.
-    * stopInternal(): Cierra explícitamente el ParcelFileDescriptor (fd.close()),
-      cancela los hilos del ProxyWorker, libera los sockets y llama a
-      stopForeground(STOP_FOREGROUND_REMOVE) para quitar el icono de llave.
+    * Override onRevoke(): Cierra el túnel si el sistema cancela la VPN.
+    * stopInternal(): Cierra el ParcelFileDescriptor (fd.close()), detiene hilos y
+      retiene la notificación con stopForeground(STOP_FOREGROUND_REMOVE).
 
 -------------------------------------------------------------------------------
 3.2 AUTO-CONFIGURACIÓN DE BATERÍA (AutoConfigAccessibilityService.kt)
 -------------------------------------------------------------------------------
-  - Servicio de accesibilidad que navega por la pantalla de sistema
-    ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS para eximir a las apps de trabajo.
-  - Máquina de estados (WAITING_MODEL / WAITING_DETAIL).
-  - Filtro de Seguridad de Paquete: Solo procesa eventos cuando event.packageName
-    pertenece a los Ajustes o Seguridad del sistema (com.android.settings,
-    com.miui.securitycenter, com.transsion.phonemanager). Si el usuario está dentro
-    de YoPrimero u otra app, el servicio permanece en reposo total (0% CPU).
-  - Reconoce términos en español venezolano y ROMs chinas ("Sin restricciones",
-    "No restringir", "Permitir", "Aceptar", "Sin límite", "Ilimitado").
+  - Navega por ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS para eximir a las apps.
+  - Filtro de Seguridad de Paquete: Solo procesa eventos en Ajustes o Seguridad del sistema.
 
 -------------------------------------------------------------------------------
 3.3 HUD FLOTANTE & WAKELOCK (HudOverlayService.kt & WakeLockHelper)
 -------------------------------------------------------------------------------
-  - Ventana flotante (TYPE_APPLICATION_OVERLAY) arrastrable en pantalla.
-  - Medición de Ping Real: Consulta DNS UDP a 1.1.1.1:53 cada 3 segundos.
-  - Indicadores de Estado Amigables (sin números confusos de ms):
-      * Ping < 50 ms:   "YoPrimero · Excelente 🟢"
-      * Ping 50-120 ms: "YoPrimero · Bueno 🟡"
-      * Ping > 120 ms:  "YoPrimero · Lento 🔴"
-      * Sin red:        "YoPrimero · Buscando red..."
-  - Interacción Táctica (Tap): Al tocar el overlay, muestra "YoPrimero Activo 🚀".
-  - WakeLock: Adquiere un PartialWakeLock con tiempo límite de seguridad de 10 horas
-    para mantener el CPU despierto y evitar que el teléfono entre en Doze.
+  - Ventana flotante (TYPE_APPLICATION_OVERLAY) arrastrable.
+  - Niveles de estado: "Excelente 🟢", "Bueno 🟡", "Lento 🔴", "Buscando red...".
+  - PartialWakeLock de seguridad con límite de 10 horas.
 
 -------------------------------------------------------------------------------
 3.4 LIMPIADOR DE RAM (util/RamCleaner.kt)
 -------------------------------------------------------------------------------
-  - Obtiene los procesos en ejecución (ActivityManager) y mata apps secundarias
-    con killBackgroundProcesses().
-  - Protección de Inmunidad: NUNCA cierra procesos del sistema, apps de la
-    lista blanca dinámica, ni servicios esenciales de Google Maps o Ubicación
-    (com.google.android.location, com.google.android.gms).
+  - Mata procesos en segundo plano respetando servicios de sistema y ubicación.
 
 ================================================================================
-4. MÓDULOS DE COMPATIBILIDAD Y SISTEMA
-================================================================================
-  - OemAutostartHelper.kt: Lanza los Intents de "Inicio Automático" (AutoStart) de
-    Xiaomi / HyperOS / MIUI, Infinix / Tecno (XOS/HiOS) y Samsung (OneUI), además
-    de la ventana emergente oculta de MIUI.
-  - BootReceiver.kt: Escucha BOOT_COMPLETED y restaura automáticamente la VPN y
-    el HUD al reiniciar el teléfono si el Modo Trabajo estaba encendido.
-  - DriverPingTileService.kt: Mosaico de Ajustes Rápidos (Quick Settings Tile) para
-    encender o apagar YoPrimero en 1 toque desde la barra de estado superior.
-
-================================================================================
-5. GESTIÓN DINÁMICA DE LISTA BLANCA (APP PICKER)
-================================================================================
-  - SettingsRepository.kt: Almacena la lista blanca personalizada en SharedPreferences.
-  - Selector Visual de Apps (DashboardScreen.kt & DashboardViewModel.kt):
-      * Consulta todas las apps instaladas mediante PackageManager y QUERY_ALL_PACKAGES.
-      * Muestra un modal interactivo con buscador en tiempo real.
-      * Cada app tiene un interruptor On/Off para agregarla o quitarla de la lista blanca.
-      * Incluye botones de inserción rápida para Uber Conductor, DiDi Conductor y PedidosYa.
-
-================================================================================
-6. IDENTIDAD VISUAL, MARCA Y DISEÑO UI/UX ("Neo-Dark Driver")
-================================================================================
-Paleta de Colores:
-  - Fondo Principal (Background): 0xFF0D1117 (Grafito Oscuro Absoluto)
-  - Tarjetas y Superficie (Surface): 0xFF161B22 / 0xFF21262D
-  - Acento Primario / Marca: 0xFF00D084 (Verde Esmeralda Eléctrico) / 0xFFFFB800 (Dorado)
-  - Acento Secundario: 0xFF38BDF8 (Azul Cielo)
-  - Bordes y Líneas: 0xFF30363D
-
-Componentes UI Exclusivos:
-  - Header: Logotipo oficial vectorial XML nativo con la marca "YoPrimero", eslogan
-    "¡Tú entregas primero!" y cápsula redondeada de estado ("Modo ON" / "En Reposo").
-  - PowerButton.kt: Botón central gigante con respuesta táctil fluida (escala).
-  - ConnectionStatusBadge.kt: Semáforo de estado con indicador de color.
-  - Speedtest Multi-DNS: Prueba comparativa de latencia en tiempo real a Cloudflare,
-    Google Public DNS y Quad9.
-  - Botón "🚀 Turbo Limpieza y Aceleración": Limpieza de RAM y refresco en 1 segundo.
-
-================================================================================
-7. HISTORIAL COMPLETO DE VERSIONES, MEJORAS Y BUGS CORREGIDOS (CHANGELOG)
+4. MÓDULOS DE ASIGNACIÓN AVANZADA
 ================================================================================
 
-v2.2 REAL (Actual):
-  - Inclusión de paquetes completos de Yummy (com.yummy.driver, com.yummy.rides,
-    com.yummy.vendor) y servicios de ubicación de Google en la lista blanca.
-  - Activación de TCP Keep-Alive (keepAlive = true, tcpNoDelay = true) en los sockets
-    del ProxyWorker para evitar desconexiones de WebSockets wss:// en Yummy.
-  - Corrección de la verificación de Accesibilidad en MIUI/HyperOS e Infinix usando
-    múltiples fallbacks con AccessibilityManager y Settings.Secure.
-  - Activación de canRetrieveWindowContent="true" en la config del servicio de accesibilidad.
+-------------------------------------------------------------------------------
+4.1 REFRESCO GPS DE ALTA PRECISIÓ N (LocationRefreshService.kt)
+-------------------------------------------------------------------------------
+  - Usa FusedLocationProviderClient con Priority.PRIORITY_HIGH_ACCURACY.
+  - Solicita coordenadas cada 2000 ms (2s) mientras el Modo Trabajo está activo.
+  - Evita que el hardware GPS entre en suspensión para reportar ubicación exacta a Yummy/Yango.
+
+-------------------------------------------------------------------------------
+4.2 PREVENCIÓN RRC IDLE / ANTENA 4G (ProxyWorker.kt)
+-------------------------------------------------------------------------------
+  - Envía paquetes UDP nulos de 1 byte a 8.8.8.8:53 cada 3 segundos.
+  - Mantiene la radio celular en estado RRC Connected, eliminando la latencia de reconexión.
+
+-------------------------------------------------------------------------------
+4.3 SOBREESCRITURA DE ALERTAS (AlertOverrideNotificationService.kt)
+-------------------------------------------------------------------------------
+  - Extiende NotificationListenerService.
+  - Al detectar notificaciones de Yummy, Yango o Ridery:
+      1. Adquiere WakeLock para encender la pantalla (SCREEN_BRIGHT_WAKE_LOCK + ACQUIRE_CAUSES_WAKEUP).
+      2. Eleva STREAM_MUSIC al 100% de volumen.
+      3. Emite un tono sonoro de alerta de alta frecuencia con ToneGenerator.
+
+================================================================================
+5. MÓDULOS DE COMPATIBILIDAD Y SISTEMA
+================================================================================
+  - OemAutostartHelper.kt: Intents para AutoStart en Xiaomi, Infinix, Samsung y ventana emergente MIUI.
+  - BootReceiver.kt: Restaura VPN, HUD y GPS tras reiniciar el teléfono.
+  - DriverPingTileService.kt: Mosaico de Ajustes Rápidos en la barra de estado.
+
+================================================================================
+6. SISTEMA DE GESTIÓN DINÁMICA DE LISTA BLANCA (PAQUETES REALES)
+================================================================================
+  - Paquetes Oficiales Verificados en Teléfono:
+      * Yummy Rides: com.yummyrides (y com.yummy.driver)
+      * Yango Pro: com.yandex.yango (y com.yango.driver)
+      * Ridery: com.ridery.driver y com.ridery.passenger
+      * Google Location Services & Maps: com.google.android.location, com.google.android.apps.maps
+  - App Picker en DashboardScreen.kt con buscador en tiempo real y switches On/Off.
+
+================================================================================
+7. IDENTIDAD VISUAL, MARCA Y DISEÑO UI/UX ("Neo-Dark Driver")
+================================================================================
+  - Tema Neo-Dark Driver (#0D1117 Fondo, #161B22 Superficie, #00D084 Verde Esmeralda, #38BDF8 Azul Cielo).
+  - Componentes: Header con logo vectorial nativo XML (ic_launcher_foreground.xml), PowerButton.kt y ConnectionStatusBadge.kt.
+
+================================================================================
+8. HISTORIAL COMPLETO DE VERSIONES, MEJORAS Y BUGS CORREGIDOS (CHANGELOG)
+================================================================================
+
+v2.3 REAL (Actual):
+  - Implementación del módulo "Location Spoofer Inverso" (LocationRefreshService.kt) con FusedLocationProviderClient a 2s.
+  - Implementación de Prevención RRC Idle en ProxyWorker.kt (rutina UDP a 8.8.8.8 cada 3s).
+  - Implementación del servicio de Sobreescritura de Alertas (AlertOverrideNotificationService.kt).
+  - Actualización de paquetes reales verificados: com.yummyrides (Yummy Rides) y com.yandex.yango (Yango).
+  - Incorporación de la tarjeta "Optimización Avanzada de Asignación" en DashboardScreen.kt.
+
+v2.2 REAL:
+  - Inclusión de paquetes completos de Yummy y Google Location en la lista blanca.
+  - Activación de TCP Keep-Alive (keepAlive = true, tcpNoDelay = true) en los sockets del ProxyWorker.
 
 v2.1 REAL:
-  - Reemplazo del contador de ms en el HUD flotante por niveles de estado amigables:
-    "Excelente 🟢", "Bueno 🟡", "Lento 🔴", "Buscando red...".
-  - Respuesta táctil al tocar el HUD ("YoPrimero Activo 🚀").
+  - Indicadores de estado amigables en el HUD flotante ("Excelente 🟢", "Bueno 🟡", "Lento 🔴").
 
 v2.0 REAL:
-  - Corrección del bug crítico donde tocar "Configurar" en la VPN no abría el diálogo.
-    Se migró el lanzamiento del Intent de confirmación a la MainActivity activa.
-  - Formateo del título "YoPrimero" en 1 sola línea con maxLines = 1 y softWrap = false.
+  - Formateo del título "YoPrimero" en 1 sola línea con maxLines = 1.
 
 v1.9 REAL:
   - Creación e integración del logotipo vectorial XML nativo (ic_launcher_foreground.xml).
-  - Configuración del fondo vectorial ic_launcher_background.xml en #0D1117.
 
 v1.8 REAL:
-  - Cierre explícito del ParcelFileDescriptor (fd.close()) en el VPN Service.
-  - Implementación del override onRevoke() para retirar el icono de llave de la barra de estado.
+  - Cierre explícito del ParcelFileDescriptor (fd.close()) en VpnService e implementación de onRevoke().
 
 v1.7 REAL:
-  - Corrección de la distribución de la cabecera en 2 filas espaciosas para evitar
-    que la cápsula de estado se aplastara o cortara.
+  - Corrección de distribución en la cabecera en 2 filas espaciosas.
 
 v1.6 REAL:
-  - Incorporación del botón "🚀 Turbo Limpieza y Aceleración".
-  - Creación del Mosaico de Ajustes Rápidos (DriverPingTileService.kt).
+  - Botón "🚀 Turbo Limpieza y Aceleración" y Quick Settings Tile.
 
 v1.5 REAL:
-  - Implementación del diseño UI "Neo-Dark Driver" con alto contraste.
-  - Procesamiento del logo en PNG transparente con canal Alfa 32-bit.
-
-v1.4 REAL:
-  - Creación del motor Tun2Socks en Kotlin puro (ProxyWorker.kt) para dar salida
-    real a paquetes UDP (DNS 53) y TCP (HTTP/HTTPS) a través de la VPN.
-
-v1.3 REAL:
-  - Filtro de eventos de accesibilidad para evitar consumo de CPU fuera de Ajustes.
-  - Adquisición de WakeLock con tiempo límite de seguridad de 10 horas.
-
-v1.2 REAL:
-  - Selector visual de apps instaladas (App Picker) con buscador y switches.
-  - Declaración del permiso QUERY_ALL_PACKAGES.
-
-v1.1 REAL:
-  - Módulo OemAutostartHelper para inicio automático en Xiaomi, Infinix y Samsung.
-  - Creación de BootReceiver para auto-arranque tras reinicio del teléfono.
-
-v1.0 REAL:
-  - Versión base inicial con MVVM, Hilt, Jetpack Compose y VpnService bs.
+  - Diseño UI Neo-Dark Driver de alto contraste.
 
 ================================================================================
-8. ESTRUCTURA DE ARCHIVOS DEL PROYECTO
+9. ESTRUCTURA DE ARCHIVOS DEL PROYECTO
 ================================================================================
 APP/
 ├── DOCUMENTACION.txt                        -> Documentación técnica oficial
@@ -227,50 +186,37 @@ APP/
 └── app/
     ├── build.gradle.kts                     -> compileSdk/targetSdk 35, dependencias
     └── src/main/
-        ├── AndroidManifest.xml              -> Permisos y registro de componentes
-        ├── res/
-        │   ├── drawable/                    -> Logotipo vectorial nativo y PNGs
-        │   ├── mipmap-anydpi-v26/           -> Iconos adaptativos
-        │   ├── values/                      -> strings.xml, colors.xml, themes.xml
-        │   └── xml/                         -> accessibility_service_config.xml
+        ├── AndroidManifest.xml              -> Permisos y registro de servicios
+        ├── res/                             -> Recurso vectoriales XML e iconos
         └── java/com/driverping/app/
-            ├── DriverPingApplication.kt    -> Clase Application + @HiltAndroidApp
-            ├── MainActivity.kt             -> Actividad principal
-            ├── data/
-            │   ├── PermissionRepository.kt -> Verificación de permisos del sistema
-            │   └── SettingsRepository.kt   -> Preferencias y Lista Blanca dinámica
-            ├── di/
-            │   └── AppModule.kt            -> Módulo Hilt de inyección
+            ├── DriverPingApplication.kt
+            ├── MainActivity.kt
+            ├── data/                        -> PermissionRepository.kt, SettingsRepository.kt
+            ├── di/                          -> AppModule.kt (Hilt)
             ├── service/
-            │   ├── BootReceiver.kt         -> Auto-arranque al reiniciar
+            │   ├── BootReceiver.kt
             │   ├── accessibility/          -> AutoConfigAccessibilityService.kt
+            │   ├── location/               -> LocationRefreshService.kt (GPS 2s)
+            │   ├── notification/           -> AlertOverrideNotificationService.kt (Alerts 100%)
             │   ├── overlay/                -> HudOverlayService.kt (HUD + WakeLock)
-            │   ├── tile/                   -> DriverPingTileService.kt (Quick Tile)
+            │   ├── tile/                   -> DriverPingTileService.kt
             │   └── vpn/                    -> FirewallVpnService.kt & ProxyWorker.kt
             ├── ui/
-            │   ├── AppNavHost.kt           -> Navegación de la app
+            │   ├── AppNavHost.kt
             │   ├── components/             -> ConnectionStatusBadge.kt, PowerButton.kt
             │   ├── dashboard/              -> DashboardScreen.kt & DashboardViewModel.kt
-            │   ├── onboarding/             -> OnboardingScreen.kt
             │   └── theme/                  -> Theme.kt, Color.kt (Neo-Dark Driver)
-            └── util/
-                ├── Constants.kt            -> Single Source of Truth (Hosts, Whitelist)
-                ├── OemAutostartHelper.kt   -> Menús ocultos Xiaomi/Infinix/Samsung
-                ├── RamCleaner.kt           -> Limpiador de memoria RAM + WakeLock
-                └── SystemHelper.kt         -> Helpers de sistema y notificaciones
+            └── util/                       -> Constants.kt, OemAutostartHelper.kt, RamCleaner.kt
 
 ================================================================================
-9. GUÍA DE COMPILACIÓN Y PUBLICACIÓN EN GITHUB
+10. GUÍA DE COMPILACIÓN Y PUBLICACIÓN EN GITHUB
 ================================================================================
   - Repositorio Público GitHub: https://github.com/jiroperof/YoPrimero
-  - Comando para enviar cambios futuros:
+  - Comando para subir cambios futuros:
       git add .
       git commit -m "Mensaje del cambio"
       git push
-  - Para compilar localmente en Android Studio:
-      1. Seleccionar la opción "app" en el desplegable superior.
-      2. Presionar Run ▶.
 
 ================================================================================
-FIN DEL DOCUMENTO - YOPRIMERO v2.2 REAL
+FIN DEL DOCUMENTO - YOPRIMERO v2.3 REAL
 ================================================================================
