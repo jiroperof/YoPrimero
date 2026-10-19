@@ -241,8 +241,8 @@ fun DashboardScreen(
             Spacer(Modifier.height(20.dp))
             PermissionsSection(
                 permissions = uiState.permissions,
-                onPermissionClick = { permission ->
-                    handlePermissionClick(permission.type)
+                onPermissionClick = { type ->
+                    handlePermissionClick(type)
                 }
             )
             Spacer(Modifier.height(20.dp))
@@ -339,7 +339,7 @@ private fun Header(workModeActive: Boolean) {
                     .padding(horizontal = 8.dp, vertical = 3.dp)
             ) {
                 Text(
-                    text = "v2.7 REAL",
+                    text = "v2.8 REAL",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -791,46 +791,144 @@ fun LivePingMonitoringSection(
 @Composable
 private fun PermissionsSection(
     permissions: List<PermissionStatus>,
-    onPermissionClick: (PermissionStatus) -> Unit
+    onPermissionClick: (PermissionType) -> Unit
 ) {
-    Text(
-        text = "Permisos para Salir a Trabajar",
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.onBackground
-    )
+    val corePermissions = permissions.filter { it.type != PermissionType.ACCESSIBILITY }
+    val pendingPermissions = corePermissions.filter { !it.granted }
+    val currentStep = pendingPermissions.firstOrNull()
 
-    if (permissions.isNotEmpty()) {
-        val granted = permissions.count { it.granted }
-        Spacer(Modifier.height(10.dp))
-        LinearProgressIndicator(
-            progress = { granted.toFloat() / permissions.size },
-            modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f)
-        )
-        Spacer(Modifier.height(6.dp))
+    Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "$granted / ${permissions.size} permisos concedidos",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            text = "Asistente de Configuración de Trabajo",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
         )
-    }
-    Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(10.dp))
 
-    when {
-        permissions.isEmpty() -> Card(modifier = Modifier.fillMaxWidth()) {
-            Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator()
-                    Spacer(Modifier.height(12.dp))
-                    Text("Verificando permisos...")
+        if (pendingPermissions.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF00D084).copy(alpha = 0.12f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00D084).copy(alpha = 0.4f))
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("🎉", style = MaterialTheme.typography.headlineMedium)
+                    Spacer(Modifier.width(14.dp))
+                    Column {
+                        Text(
+                            text = "¡Configuración Lista para Trabajar!",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF00D084)
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = "Tu celular está 100% optimizado para recibir servicios con máxima prioridad.",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
-        }
-        else -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            permissions.forEach { permission ->
-                PermissionRow(permission, onClick = { onPermissionClick(permission) })
+        } else if (currentStep != null) {
+            val totalSteps = corePermissions.size
+            val completedSteps = totalSteps - pendingPermissions.size
+            val progress = completedSteps.toFloat() / totalSteps
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("⚡", style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = "Paso Guiado Automático",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Text(
+                            text = "Paso ${completedSteps + 1} de $totalSteps",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = PermissionIcon(currentStep.type),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                        Spacer(Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = currentStep.name,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                text = currentStep.description,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Button(
+                        onClick = { onPermissionClick(currentStep.type) },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "Activar Este Paso ➔",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         }
     }
@@ -842,66 +940,6 @@ private fun PermissionIcon(type: PermissionType): ImageVector = when (type) {
     PermissionType.VPN -> Icons.Filled.Lock
     PermissionType.NOTIFICATION -> Icons.Filled.Notifications
     PermissionType.LOCATION -> Icons.Filled.LocationOn
-}
-
-@Composable
-private fun PermissionRow(
-    permission: PermissionStatus,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, Color(0xFF222E42), RoundedCornerShape(16.dp))
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(
-                        color = if (permission.granted)
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                        else
-                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.06f),
-                        shape = RoundedCornerShape(12.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = PermissionIcon(permission.type),
-                    contentDescription = null,
-                    tint = if (permission.granted)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
-                )
-            }
-            Spacer(Modifier.size(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = permission.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = permission.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            if (permission.granted) {
-                Icon(Icons.Filled.CheckCircle, contentDescription = "Concedido", tint = Color(0xFF10B981))
-            } else {
-                Text("Configurar", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            }
-        }
-    }
 }
 
 @Composable

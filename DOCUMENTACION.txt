@@ -2,7 +2,7 @@
                         YOPRIMERO - DOCUMENTACIÓN TÉCNICA OFICIAL
 ================================================================================
 Proyecto: YoPrimero (App Android para Conductores y Repartidores)
-Versión Actual: v2.7 REAL (build version 18)
+Versión Actual: v2.8 REAL (build version 19)
 Ubicación Raíz: C:/Users/roper/DEV/APP
 Plataforma: Android (minSdk 24 - Android 7.0, targetSdk / compileSdk 35 - Android 15)
 Stack: Kotlin 2.1.10, Jetpack Compose, Material 3, MVVM, Hilt 2.53.1, Coroutines, VpnService (Tun2Socks), FusedLocationProviderClient, NotificationListenerService
@@ -143,7 +143,11 @@ Stack Tecnológico:
 8. HISTORIAL COMPLETO DE VERSIONES, MEJORAS Y BUGS CORREGIDOS (CHANGELOG)
 ================================================================================
 
-v2.7 REAL (Actual):
+v2.8 REAL (Actual):
+  - Implementación del Asistente de Configuración Automático Paso a Paso ("Automated Setup Card") con barra de progreso reactiva y avance guiado para permisos de trabajo.
+  - Al completar la configuración, muestra la tarjeta de celebración "🎉 ¡Configuración Lista para Trabajar!".
+
+v2.7 REAL:
   - Simplificación completa de la UI/UX y permisología para conductores (lenguaje 100% amigable y claro).
   - Reemplazo de jerga técnica por frases de beneficio de trabajo real ("Conexión Acelerada", "Ubicación Exacta en Tiempo Real", "Protección Anti-Cierre").
   - Incorporación de la barra de insignias de confianza sutiles ("⚡ Red Cloudflare", "📍 GPS 2s Activo", "🛡️ Anti-Cierre").
