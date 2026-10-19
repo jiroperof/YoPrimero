@@ -2,7 +2,7 @@
                         YOPRIMERO - DOCUMENTACIÓN TÉCNICA OFICIAL
 ================================================================================
 Proyecto: YoPrimero (App Android para Conductores y Repartidores)
-Versión Actual: v2.5 REAL (build version 16)
+Versión Actual: v2.6 REAL (build version 17)
 Ubicación Raíz: C:/Users/roper/DEV/APP
 Plataforma: Android (minSdk 24 - Android 7.0, targetSdk / compileSdk 35 - Android 15)
 Stack: Kotlin 2.1.10, Jetpack Compose, Material 3, MVVM, Hilt 2.53.1, Coroutines, VpnService (Tun2Socks), FusedLocationProviderClient, NotificationListenerService
@@ -143,7 +143,11 @@ Stack Tecnológico:
 8. HISTORIAL COMPLETO DE VERSIONES, MEJORAS Y BUGS CORREGIDOS (CHANGELOG)
 ================================================================================
 
-v2.5 REAL (Actual):
+v2.6 REAL (Actual):
+  - Solución definitiva del error "Fetch Failed: The client had an error while calling the backend!" mediante el enrutamiento exclusivo de DNS a Cloudflare 1.1.1.1/32 en el túnel TUN.
+  - Permite que las conexiones HTTP/HTTPS/GraphQL de Yummy utilicen la pila TCP nativa del kernel de Android a velocidad 100% nativa sin emulación de espacio de usuario.
+
+v2.5 REAL:
   - Solución del error "Error fetching" / java.lang en Yummy mediante la inclusión de paquetes del sistema WebView (com.google.android.webview, com.android.webview) y la pila de red de Google en la lista blanca de VpnService.
   - Activación de allowBypass() en la VPN para permitir llamadas directas de emergencia del sistema Android.
 

@@ -70,16 +70,19 @@ class FirewallVpnService : VpnService() {
         builder.setSession(Constants.SESSION_KEY)
         builder.setMtu(Constants.MTU)
         builder.addAddress(Constants.TUN_VIRTUAL_IP, Constants.TUN_NETMASK)
-        builder.addRoute("0.0.0.0", 0)
 
-        // DNS forzado a Cloudflare (baja latencia)
+        // DNS Anycast de Cloudflare para resolución ultra-rápida (15ms)
         builder.addDnsServer(Constants.DNS_PRIMARY)
         builder.addDnsServer(Constants.DNS_SECONDARY)
 
-        // Rutas para que los servidores DNS queden accesibles desde el túnel
+        // Enrutar las consultas DNS a Cloudflare/Google hacia el túnel para aceleración de latencia,
+        // permitiendo que el tráfico HTTP/HTTPS/GraphQL de Yummy utilice la pila TCP nativa
+        // del kernel de Android sin emulación en espacio de usuario.
         try {
             builder.addRoute(Constants.DNS_PRIMARY, 32)
             builder.addRoute(Constants.DNS_SECONDARY, 32)
+            builder.addRoute("8.8.8.8", 32)
+            builder.addRoute("8.8.4.4", 32)
         } catch (_: Exception) {
         }
 
