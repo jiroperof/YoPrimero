@@ -35,6 +35,9 @@ object Constants {
     val WHITELIST = listOf(
         "com.yummyrides",
         "com.yummy.driver",
+        "com.yummy.rides",
+        "com.yummy.user",
+        "com.yummy.vendor",
         "com.yandex.yango",
         "com.yango.driver",
         "com.yandex.taximeter",
@@ -45,6 +48,9 @@ object Constants {
         "com.google.android.gsf",
         "com.google.android.location",
         "com.google.android.apps.maps",
+        "com.google.android.webview",
+        "com.android.webview",
+        "com.google.android.networkstack",
         "com.android.vending",
         "com.android.chrome"
     )

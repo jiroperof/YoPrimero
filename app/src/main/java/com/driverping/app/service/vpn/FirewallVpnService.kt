@@ -85,13 +85,23 @@ class FirewallVpnService : VpnService() {
 
         // FIREWALL POR APP: usa builder.addAllowedApplication(...) para cada paquete
         // de la lista blanca dinámica guardada en preferencias (SettingsRepository).
-        val activeWhitelist = settingsRepository.getWhitelistPackages()
+        val activeWhitelist = settingsRepository.getWhitelistPackages().toMutableSet()
+        // Garantizar el tráfico del sistema WebView y red de Google que Yummy usa internamente
+        activeWhitelist.addAll(listOf("com.google.android.webview", "com.android.webview", "com.google.android.networkstack", "com.google.android.gms", "com.google.android.gsf"))
+
         for (pkg in activeWhitelist) {
             try {
                 builder.addAllowedApplication(pkg)
             } catch (_: Exception) {
                 // El paquete no está instalado: se ignora
             }
+        }
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                builder.allowBypass()
+            }
+        } catch (_: Exception) {
         }
 
         builder.setBlocking(true)
