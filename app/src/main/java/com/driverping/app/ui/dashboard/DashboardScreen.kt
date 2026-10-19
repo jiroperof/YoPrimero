@@ -172,7 +172,9 @@ fun DashboardScreen(
                 .padding(20.dp)
         ) {
             Header(workModeActive = uiState.workModeActive)
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(12.dp))
+            TrustBadgesRow(workModeActive = uiState.workModeActive)
+            Spacer(Modifier.height(16.dp))
             WorkModeButton(
                 active = uiState.workModeActive,
                 enabled = uiState.allPermissionsGranted,
@@ -337,12 +339,73 @@ private fun Header(workModeActive: Boolean) {
                     .padding(horizontal = 8.dp, vertical = 3.dp)
             ) {
                 Text(
-                    text = "v2.6 REAL",
+                    text = "v2.7 REAL",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun TrustBadgesRow(workModeActive: Boolean) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        TrustBadgeChip(
+            icon = "⚡",
+            label = "Red Cloudflare",
+            active = workModeActive,
+            modifier = Modifier.weight(1f)
+        )
+        TrustBadgeChip(
+            icon = "📍",
+            label = "GPS 2s Activo",
+            active = workModeActive,
+            modifier = Modifier.weight(1f)
+        )
+        TrustBadgeChip(
+            icon = "🛡️",
+            label = "Anti-Cierre",
+            active = workModeActive,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun TrustBadgeChip(
+    icon: String,
+    label: String,
+    active: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = if (active) Color(0xFF00D084).copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface,
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            if (active) Color(0xFF00D084).copy(alpha = 0.4f) else MaterialTheme.colorScheme.outline
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(icon, style = MaterialTheme.typography.labelSmall)
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = if (active) Color(0xFF00D084) else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
+            )
         }
     }
 }
@@ -731,7 +794,7 @@ private fun PermissionsSection(
     onPermissionClick: (PermissionStatus) -> Unit
 ) {
     Text(
-        text = "Estado de Permisos del Sistema",
+        text = "Permisos para Salir a Trabajar",
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.onBackground

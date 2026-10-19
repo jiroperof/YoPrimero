@@ -28,34 +28,34 @@ class PermissionRepository(private val context: Context) {
 
     fun getPermissionStatuses(): List<PermissionStatus> = listOf(
         PermissionStatus(
-            type = PermissionType.OVERLAY,
-            name = "Ventana flotante (HUD)",
-            description = "Muestra tu ping en tiempo real encima de las demás apps.",
-            granted = Settings.canDrawOverlays(context)
-        ),
-        PermissionStatus(
-            type = PermissionType.ACCESSIBILITY,
-            name = "Accesibilidad",
-            description = "Automatiza la desactivación de la optimización de batería.",
-            granted = isAccessibilityEnabled()
-        ),
-        PermissionStatus(
             type = PermissionType.VPN,
-            name = "VPN (Firewall)",
-            description = "Bloquea tráfico de apps ajenas y fuerza DNS a Cloudflare.",
+            name = "Conexión Acelerada para Viajes",
+            description = "Acelera la respuesta de tu red y bloquea distracciones mientras trabajas.",
             granted = VpnService.prepare(context) == null
         ),
         PermissionStatus(
+            type = PermissionType.LOCATION,
+            name = "Ubicación Exacta en Tiempo Real",
+            description = "Mantiene tu GPS activo cada 2s para recibir solicitudes de viajes cercanos.",
+            granted = hasLocationPermission()
+        ),
+        PermissionStatus(
+            type = PermissionType.OVERLAY,
+            name = "Burbuja Flotante de Estado",
+            description = "Muestra una discreta luz verde de estado sobre Yummy y Yango.",
+            granted = Settings.canDrawOverlays(context)
+        ),
+        PermissionStatus(
             type = PermissionType.NOTIFICATION,
-            name = "Notificaciones",
-            description = "Notificación persistente del servicio de trabajo.",
+            name = "Avisos de Servicio Activo",
+            description = "Notificación ligera para mantener el trabajo activo en segundo plano.",
             granted = hasNotificationPermission()
         ),
         PermissionStatus(
-            type = PermissionType.LOCATION,
-            name = "Ubicación GPS (Alta Precisión)",
-            description = "Refresco GPS de 2s para prioridad de asignación de viajes.",
-            granted = hasLocationPermission()
+            type = PermissionType.ACCESSIBILITY,
+            name = "Protección Anti-Cierre (Opcional)",
+            description = "Evita que el celular apague tus apps de trabajo al apagar la pantalla.",
+            granted = isAccessibilityEnabled()
         )
     )
 

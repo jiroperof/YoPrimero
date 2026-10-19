@@ -2,7 +2,7 @@
                         YOPRIMERO - DOCUMENTACIÓN TÉCNICA OFICIAL
 ================================================================================
 Proyecto: YoPrimero (App Android para Conductores y Repartidores)
-Versión Actual: v2.6 REAL (build version 17)
+Versión Actual: v2.7 REAL (build version 18)
 Ubicación Raíz: C:/Users/roper/DEV/APP
 Plataforma: Android (minSdk 24 - Android 7.0, targetSdk / compileSdk 35 - Android 15)
 Stack: Kotlin 2.1.10, Jetpack Compose, Material 3, MVVM, Hilt 2.53.1, Coroutines, VpnService (Tun2Socks), FusedLocationProviderClient, NotificationListenerService
@@ -143,7 +143,13 @@ Stack Tecnológico:
 8. HISTORIAL COMPLETO DE VERSIONES, MEJORAS Y BUGS CORREGIDOS (CHANGELOG)
 ================================================================================
 
-v2.6 REAL (Actual):
+v2.7 REAL (Actual):
+  - Simplificación completa de la UI/UX y permisología para conductores (lenguaje 100% amigable y claro).
+  - Reemplazo de jerga técnica por frases de beneficio de trabajo real ("Conexión Acelerada", "Ubicación Exacta en Tiempo Real", "Protección Anti-Cierre").
+  - Incorporación de la barra de insignias de confianza sutiles ("⚡ Red Cloudflare", "📍 GPS 2s Activo", "🛡️ Anti-Cierre").
+  - Rediseño del Onboarding con asistente guiado amigable en 3 pasos.
+
+v2.6 REAL:
   - Solución definitiva del error "Fetch Failed: The client had an error while calling the backend!" mediante el enrutamiento exclusivo de DNS a Cloudflare 1.1.1.1/32 en el túnel TUN.
   - Permite que las conexiones HTTP/HTTPS/GraphQL de Yummy utilicen la pila TCP nativa del kernel de Android a velocidad 100% nativa sin emulación de espacio de usuario.
 

@@ -12,11 +12,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Layers
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -35,7 +33,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.driverping.app.data.PermissionType
 
 @Composable
 fun OnboardingScreen(
@@ -45,28 +42,19 @@ fun OnboardingScreen(
     val steps = remember {
         listOf(
             OnboardingStep(
-                icon = Icons.Filled.Security,
-                title = "Bienvenido a YoPrimero",
-                description = "Optimizamos tu red y rendimiento para que no entregues pedidos o viajes con lentitud. Te guiaremos por los permisos necesarios.",
-                type = null
+                icon = Icons.Filled.Bolt,
+                title = "Recibe Solicitudes Primero",
+                description = "Acelera la respuesta de tu red para que las ofertas de viaje de Yummy, Yango y Ridery lleguen directamente a tu pantalla sin demoras."
             ),
             OnboardingStep(
-                icon = Icons.Filled.Lock,
-                title = "Firewall VPN",
-                description = "Creamos una VPN local que bloquea el tráfico de apps que no son de tu trabajo y fuerza tu DNS a Cloudflare (1.1.1.1) para latencias mínimas.",
-                type = PermissionType.VPN
+                icon = Icons.Filled.LocationOn,
+                title = "Ubicación Exacta y Alertas Fuertes",
+                description = "Mantiene tu GPS activo en alta precisión y eleva el volumen al 100% cuando llega un nuevo servicio para que jamás pierdas una carrera."
             ),
             OnboardingStep(
-                icon = Icons.Filled.Layers,
-                title = "HUD Flotante",
-                description = "Una ventana discreta muestra tu ping en tiempo real. También mantiene la pantalla despierta para que no entren en modo reposo durante el trabajo.",
-                type = PermissionType.OVERLAY
-            ),
-            OnboardingStep(
-                icon = Icons.Filled.Notifications,
-                title = "Accesibilidad + Notificaciones",
-                description = "La accesibilidad automatiza la desactivación de la optimización de batería de tus apps de trabajo. Las notificaciones mantienen el servicio activo.",
-                type = PermissionType.ACCESSIBILITY
+                icon = Icons.Filled.PowerSettingsNew,
+                title = "Listo para Salir a Trabajar",
+                description = "Con un solo toque en el botón central de encendido, activas toda la protección y aceleración de red. ¡Tú entregas primero!"
             )
         )
     }
@@ -111,7 +99,7 @@ fun OnboardingScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             ) {
                 Column(
@@ -131,13 +119,14 @@ fun OnboardingScreen(
                         text = step.title,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(Modifier.height(12.dp))
                     Text(
                         text = step.description,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -157,7 +146,7 @@ fun OnboardingScreen(
                         colors = androidx.compose.material3.ButtonDefaults
                             .buttonColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
-                        Text("Atrás")
+                        Text("Atrás", color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
                 Button(
@@ -170,26 +159,7 @@ fun OnboardingScreen(
                     },
                     modifier = Modifier.weight(1.1f)
                 ) {
-                    Text(if (currentStep == steps.lastIndex) "Ir al Dashboard" else "Siguiente")
-                }
-            }
-
-            // Mini botón de salto para permisos si es una pantalla de permiso
-            step.type?.let { type ->
-                Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Filled.CheckCircle,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(Modifier.size(6.dp))
-                    Text(
-                        "Este permiso se puede conceder luego en el Dashboard",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-                    )
+                    Text(if (currentStep == steps.lastIndex) "Comenzar" else "Siguiente")
                 }
             }
         }
@@ -199,6 +169,5 @@ fun OnboardingScreen(
 private data class OnboardingStep(
     val icon: ImageVector,
     val title: String,
-    val description: String,
-    val type: PermissionType?
+    val description: String
 )
