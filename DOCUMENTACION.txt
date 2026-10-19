@@ -2,7 +2,7 @@
                         YOPRIMERO - DOCUMENTACIÓN TÉCNICA OFICIAL
 ================================================================================
 Proyecto: YoPrimero (App Android para Conductores y Repartidores)
-Versión Actual: v2.3 REAL (build version 14)
+Versión Actual: v2.4 REAL (build version 15)
 Ubicación Raíz: C:/Users/roper/DEV/APP
 Plataforma: Android (minSdk 24 - Android 7.0, targetSdk / compileSdk 35 - Android 15)
 Stack: Kotlin 2.1.10, Jetpack Compose, Material 3, MVVM, Hilt 2.53.1, Coroutines, VpnService (Tun2Socks), FusedLocationProviderClient, NotificationListenerService
@@ -143,7 +143,10 @@ Stack Tecnológico:
 8. HISTORIAL COMPLETO DE VERSIONES, MEJORAS Y BUGS CORREGIDOS (CHANGELOG)
 ================================================================================
 
-v2.3 REAL (Actual):
+v2.4 REAL (Actual):
+  - Inclusión oficial de com.ridery (Ridery app principal) en la lista blanca de la VPN, protección de RAM y Sobreescritura de Alertas.
+
+v2.3 REAL:
   - Implementación del módulo "Location Spoofer Inverso" (LocationRefreshService.kt) con FusedLocationProviderClient a 2s.
   - Implementación de Prevención RRC Idle en ProxyWorker.kt (rutina UDP a 8.8.8.8 cada 3s).
   - Implementación del servicio de Sobreescritura de Alertas (AlertOverrideNotificationService.kt).

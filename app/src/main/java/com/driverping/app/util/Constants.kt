@@ -38,6 +38,7 @@ object Constants {
         "com.yandex.yango",
         "com.yango.driver",
         "com.yandex.taximeter",
+        "com.ridery",
         "com.ridery.driver",
         "com.ridery.passenger",
         "com.google.android.gms",

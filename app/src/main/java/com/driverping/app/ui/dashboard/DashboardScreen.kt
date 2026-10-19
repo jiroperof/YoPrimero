@@ -337,7 +337,7 @@ private fun Header(workModeActive: Boolean) {
                     .padding(horizontal = 8.dp, vertical = 3.dp)
             ) {
                 Text(
-                    text = "v2.3 REAL",
+                    text = "v2.4 REAL",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
