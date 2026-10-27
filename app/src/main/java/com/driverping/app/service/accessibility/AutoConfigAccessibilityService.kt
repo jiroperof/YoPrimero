@@ -10,19 +10,6 @@ import android.view.accessibility.AccessibilityNodeInfo
  * Servicio de accesibilidad que navega automáticamente por la UI de Android
  * para desactivar la "Optimización de batería" de las apps de la lista
  * blanca (Yummy, Ridery, Yango).
- *
- * Flujo (máquina de estados):
- *  STATE_WAITING_MODEL  -> espera la lista de apps
- *  STATE_WAITING_DETAIL -> dentro de la pantalla de detalle de una app
- *
- * 1. Al conectarse abre "Ignorar optimización de batería".
- * 2. En la lista busca el nombre de una app whitelist y la toca.
- * 3. En el detalle activa el toggle "Permitir" y vuelve atrás.
- * 4. Repite hasta agotar la whitelist.
- *
- * Es robusto frente a variaciones de UI: busca por textos visibles,
- * contentDescription y sube por los padres hasta encontrar un nodo cliqueable.
- * Los switches se detectan por isCheckable o className "Switch".
  */
 class AutoConfigAccessibilityService : AccessibilityService() {
 
@@ -69,14 +56,9 @@ class AutoConfigAccessibilityService : AccessibilityService() {
         }
     }
 
-    /**
-     * Estamos en la lista de apps con optimización de batería.
-     * Buscamos la próxima app de la whitelist no procesada y la tocamos.
-     */
     private fun handleModelList(root: AccessibilityNodeInfo) {
         val nextLabel = whitelistLabels.firstOrNull { it !in processed }
         if (nextLabel == null) {
-            // Terminamos: nada más que hacer
             state = State.WAITING_MODEL
             return
         }
@@ -86,17 +68,11 @@ class AutoConfigAccessibilityService : AccessibilityService() {
         }
     }
 
-    /**
-     * Estamos en la pantalla de detalle de una app. Activamos el toggle
-     * "Permitir" si está apagado, y volvemos a la lista.
-     */
     private fun handleDetail(root: AccessibilityNodeInfo) {
-        val toggled = toggleWhitelistBattery(root)
-        if (toggled) {
-            // Cierto margen para que se aplique antes de retroceder
-            performGlobalAction(GLOBAL_ACTION_BACK)
-            state = State.WAITING_MODEL
-        }
+        toggleWhitelistBattery(root)
+        // Retroceder de forma segura después de configurar o si ya estaba activa
+        performGlobalAction(GLOBAL_ACTION_BACK)
+        state = State.WAITING_MODEL
     }
 
     private fun toggleWhitelistBattery(root: AccessibilityNodeInfo): Boolean {
@@ -120,10 +96,6 @@ class AutoConfigAccessibilityService : AccessibilityService() {
         return false
     }
 
-    /**
-     * Intenta teclear un nodo subiendo por sus padres hasta encontrar uno
-     * clickeable y visible.
-     */
     private fun tryClick(node: AccessibilityNodeInfo): Boolean {
         var current: AccessibilityNodeInfo? = node
         var depth = 0

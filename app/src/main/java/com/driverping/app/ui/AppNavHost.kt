@@ -25,8 +25,8 @@ fun AppNavHost(
 ) {
     val navController = rememberNavController()
 
-    // Abrir directamente el Dashboard para acceso inmediato
-    val start = Routes.DASHBOARD
+    // Muestra Onboarding la primera vez y Dashboard en posteriores aperturas
+    val start = if (settingsRepository.isOnboardingDone()) Routes.DASHBOARD else Routes.ONBOARDING
 
     NavHost(
         navController = navController,
