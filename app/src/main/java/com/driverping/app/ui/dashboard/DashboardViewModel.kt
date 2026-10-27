@@ -120,6 +120,27 @@ class DashboardViewModel @Inject constructor(
         OemAutostartHelper.openMiuiAdvancedPermissions(context)
     }
 
+    fun testPriorityAlert(context: Context) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(message = "🔔 Probando alerta sonora al 100% de volumen...")
+            withContext(Dispatchers.IO) {
+                try {
+                    val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+                    val prevVol = audioManager.getStreamVolume(android.media.AudioManager.STREAM_MUSIC)
+                    val maxVol = audioManager.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC)
+                    audioManager.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, maxVol, 0)
+                    val toneGen = android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC, 100)
+                    toneGen.startTone(android.media.ToneGenerator.TONE_CDMA_HIGH_L, 800)
+                    delay(850L)
+                    toneGen.release()
+                    delay(3000L)
+                    audioManager.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, prevVol, 0)
+                } catch (_: Exception) {
+                }
+            }
+        }
+    }
+
     fun runTurboOptimization(context: Context) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(progress = true)

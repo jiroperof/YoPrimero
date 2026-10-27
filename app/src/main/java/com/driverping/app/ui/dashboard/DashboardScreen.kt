@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.VpnService
 import android.os.Build
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,8 +33,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
@@ -43,8 +46,10 @@ import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Power
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
@@ -68,6 +73,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -160,6 +166,8 @@ fun DashboardScreen(
         }
     }
 
+    var selectedTab by remember { mutableIntStateOf(0) }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -175,92 +183,78 @@ fun DashboardScreen(
             Spacer(Modifier.height(12.dp))
             TrustBadgesRow(workModeActive = uiState.workModeActive)
             Spacer(Modifier.height(16.dp))
-            WorkModeButton(
-                active = uiState.workModeActive,
-                enabled = uiState.allPermissionsGranted,
-                inProgress = uiState.progress,
-                livePingMs = uiState.livePingMs,
-                ramKilled = uiState.ramProcessesKilled,
-                onClick = {
-                    if (uiState.allPermissionsGranted) {
-                        viewModel.toggleWorkMode()
-                    } else {
-                        val missing = uiState.permissions.firstOrNull { !it.granted }
-                        if (missing != null) {
-                            handlePermissionClick(missing.type)
-                        } else {
-                            viewModel.toggleWorkMode()
+            MainSectionTabs(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
+            Spacer(Modifier.height(20.dp))
+
+            when (selectedTab) {
+                0 -> {
+                    WorkModeButton(
+                        active = uiState.workModeActive,
+                        enabled = uiState.allPermissionsGranted,
+                        inProgress = uiState.progress,
+                        livePingMs = uiState.livePingMs,
+                        ramKilled = uiState.ramProcessesKilled,
+                        onClick = {
+                            if (uiState.allPermissionsGranted) {
+                                viewModel.toggleWorkMode()
+                            } else {
+                                val missing = uiState.permissions.firstOrNull { !it.granted }
+                                if (missing != null) {
+                                    handlePermissionClick(missing.type)
+                                } else {
+                                    viewModel.toggleWorkMode()
+                                }
+                            }
                         }
-                    }
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    PermissionsSection(
+                        permissions = uiState.permissions,
+                        onPermissionClick = { type ->
+                            handlePermissionClick(type)
+                        }
+                    )
                 }
-            )
-            Spacer(Modifier.height(12.dp))
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { viewModel.runTurboOptimization(context) },
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("🚀", style = MaterialTheme.typography.titleMedium)
-                        Spacer(Modifier.size(10.dp))
-                        Column {
-                            Text("Turbo Limpieza y Aceleración", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                            Text("Libera RAM y limpia caché DNS en 1 segundo", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                    Text("Ejecutar", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                1 -> {
+                    WhitelistSection(
+                        whitelist = uiState.whitelistPackages,
+                        installedApps = uiState.installedApps,
+                        isLoadingApps = uiState.isLoadingApps,
+                        onLoadApps = { viewModel.loadInstalledApps(context) },
+                        onToggleApp = { viewModel.toggleAppWhitelist(it) },
+                        onAddPackage = { viewModel.addPackageToWhitelist(it) },
+                        onRemovePackage = { viewModel.removePackageFromWhitelist(it) },
+                        onResetDefault = { viewModel.resetWhitelist() }
+                    )
+                }
+                2 -> {
+                    DriverOptimizationsSection(
+                        workModeActive = uiState.workModeActive,
+                        onOpenNotificationListener = {
+                            try {
+                                val intent = Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                context.startActivity(intent)
+                            } catch (_: Exception) {
+                            }
+                        },
+                        onTestAlert = { viewModel.testPriorityAlert(context) }
+                    )
+                    Spacer(Modifier.height(20.dp))
+                    LivePingMonitoringSection(
+                        pingMs = uiState.livePingMs,
+                        pingHistory = uiState.pingHistory,
+                        isTestingDns = uiState.isTestingDns,
+                        dnsResults = uiState.dnsResults,
+                        onRunDnsTest = { viewModel.runDnsTest() }
+                    )
+                    Spacer(Modifier.height(20.dp))
+                    ChineseRomCompatSection(
+                        onAutoStartClick = { viewModel.openAutoStartSettings() },
+                        onMiuiPopupClick = { viewModel.openMiuiAdvancedSettings() }
+                    )
                 }
             }
-            Spacer(Modifier.height(14.dp))
-            DriverOptimizationsSection(
-                workModeActive = uiState.workModeActive,
-                onOpenNotificationListener = {
-                    try {
-                        val intent = Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        context.startActivity(intent)
-                    } catch (_: Exception) {
-                    }
-                }
-            )
-            Spacer(Modifier.height(20.dp))
-            LivePingMonitoringSection(
-                pingMs = uiState.livePingMs,
-                pingHistory = uiState.pingHistory,
-                isTestingDns = uiState.isTestingDns,
-                dnsResults = uiState.dnsResults,
-                onRunDnsTest = { viewModel.runDnsTest() }
-            )
-            Spacer(Modifier.height(20.dp))
-            PermissionsSection(
-                permissions = uiState.permissions,
-                onPermissionClick = { type ->
-                    handlePermissionClick(type)
-                }
-            )
-            Spacer(Modifier.height(20.dp))
-            ChineseRomCompatSection(
-                onAutoStartClick = { viewModel.openAutoStartSettings() },
-                onMiuiPopupClick = { viewModel.openMiuiAdvancedSettings() }
-            )
-            Spacer(Modifier.height(20.dp))
-            WhitelistSection(
-                whitelist = uiState.whitelistPackages,
-                installedApps = uiState.installedApps,
-                isLoadingApps = uiState.isLoadingApps,
-                onLoadApps = { viewModel.loadInstalledApps(context) },
-                onToggleApp = { viewModel.toggleAppWhitelist(it) },
-                onAddPackage = { viewModel.addPackageToWhitelist(it) },
-                onRemovePackage = { viewModel.removePackageFromWhitelist(it) },
-                onResetDefault = { viewModel.resetWhitelist() }
-            )
             Spacer(Modifier.height(24.dp))
         }
     }
@@ -339,11 +333,68 @@ private fun Header(workModeActive: Boolean) {
                     .padding(horizontal = 8.dp, vertical = 3.dp)
             ) {
                 Text(
-                    text = "v2.9 REAL",
+                    text = "v3.0",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MainSectionTabs(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            val tabs = listOf("Inicio", "Apps", "Ajustes")
+            val icons = listOf(Icons.Filled.Home, Icons.Filled.Apps, Icons.Filled.Settings)
+
+            tabs.forEachIndexed { index, title ->
+                val selected = index == selectedTab
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onTabSelected(index) },
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else Color.Transparent,
+                    border = BorderStroke(
+                        1.dp,
+                        if (selected) MaterialTheme.colorScheme.primary else Color.Transparent
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(vertical = 10.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = icons[index],
+                            contentDescription = null,
+                            tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
         }
     }
@@ -501,7 +552,8 @@ private fun WorkModeButton(
 @Composable
 private fun DriverOptimizationsSection(
     workModeActive: Boolean,
-    onOpenNotificationListener: () -> Unit
+    onOpenNotificationListener: () -> Unit,
+    onTestAlert: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -510,68 +562,15 @@ private fun DriverOptimizationsSection(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Optimización Avanzada de Asignación",
+                text = "Alertas Prioritarias de Trabajo",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(Modifier.height(12.dp))
 
-            // 1. Refresco GPS 2s
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.LocationOn,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = "Refresco GPS de Alta Frecuencia (2s)",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = if (workModeActive) "Módem GPS activo reportando coordenadas cada 2s" else "Se activará al encender el Modo Trabajo",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                Box(
-                    modifier = Modifier
-                        .background(
-                            color = if (workModeActive) Color(0xFF00D084).copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = if (workModeActive) "2s ACTIVO" else "EN REPOSO",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = if (workModeActive) Color(0xFF00D084) else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(14.dp))
-
-            // 2. Sobreescritura de Alertas
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onOpenNotificationListener() },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -588,7 +587,7 @@ private fun DriverOptimizationsSection(
                     Spacer(Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "Sobreescritura de Alertas (100% Vol)",
+                            text = "Alertas Prioritarias (100% Vol)",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -604,8 +603,21 @@ private fun DriverOptimizationsSection(
                     text = "Ajustes",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.secondary
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.clickable { onOpenNotificationListener() }
                 )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            Button(
+                onClick = { onTestAlert() },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Filled.VolumeUp, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Probar Alerta (100% Volumen)", fontWeight = FontWeight.Bold)
             }
         }
     }
